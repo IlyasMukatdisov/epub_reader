@@ -1,37 +1,50 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:epub_reader/features/auth/provider/auth_provider.dart';
 import 'package:epub_reader/features/book/models/book_model.dart';
+import 'package:epub_reader/features/book/provider/book_repository.dart';
 import 'package:epub_reader/utils/strings.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 final bookRepositoryProvider = Provider<BookRepository>(
-  (ref) => BookRepository(
+  (ref) => FirebaseBookRepository(
     firestore: FirebaseFirestore.instance,
   ),
 );
 
-class BookRepository {
+final booksProvider = StreamProvider.autoDispose<List<BookModel>>((ref) {
+  final userId = ref.watch(authProvider).currentUser?.uid;
+  final repository = ref.watch(bookRepositoryProvider);
+  return repository.getBooks(userId: userId!);
+});
+
+class FirebaseBookRepository implements BookRepository {
   final FirebaseFirestore firestore;
 
-  BookRepository({
+  FirebaseBookRepository({
     required this.firestore,
   });
 
-  Future<List<BookModel>> getBooks({
+  @override
+  Stream<List<BookModel>> getBooks({
     required String userId,
-  }) async {
-    final QuerySnapshot querySnapshot = await firestore
+  }) {
+    return firestore
         .collection(Strings.usersCollection)
         .doc(userId)
         .collection(Strings.booksCollection)
-        .get();
-    final List<BookModel> books = querySnapshot.docs.map(
-      (doc) {
-        return BookModel.fromMap(doc.data() as Map<String, dynamic>);
-      },
-    ).toList();
-    return books;
+        .snapshots()
+        .asyncMap(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => BookModel.fromMap(
+                  doc.data(),
+                ),
+              )
+              .toList(),
+        );
   }
 
+  @override
   Future<void> addBooks({
     required List<BookModel> books,
     required String userId,
@@ -40,7 +53,7 @@ class BookRepository {
       await firestore
           .collection(Strings.usersCollection)
           .doc(userId)
-          .collection('books')
+          .collection(Strings.booksCollection)
           .doc(book.id)
           .set(
             book.toMap(),

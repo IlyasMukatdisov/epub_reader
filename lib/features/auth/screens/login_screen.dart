@@ -96,7 +96,7 @@ class LoginScreen extends HookConsumerWidget {
                         ).then(
                           (value) {
                             Navigator.of(context).pushNamedAndRemoveUntil(
-                              RouteNames.bookDetails,
+                              RouteNames.allBooks,
                               (route) => false,
                             );
                           },

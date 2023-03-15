@@ -23,15 +23,17 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Epub Reader',
       theme: ThemeData.light(
         useMaterial3: true,
       ),
+      darkTheme: ThemeData.dark(
+        useMaterial3: true,
+      ),
+      themeMode: ThemeMode.system,
       debugShowCheckedModeBanner: false,
       onGenerateRoute: (settings) => generateRoute(settings),
-      home: const SafeArea(
-        child: HomeScreen(),
-      ),
+      home: const HomeScreen(),
     );
   }
 }

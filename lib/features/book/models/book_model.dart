@@ -1,34 +1,29 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 
 class BookModel {
   final String title;
-  final String author;
-  final String description;
-  final String image;
+  final List<String> authors;
   final String id;
-  final String progress;
+  final String? progress;
   BookModel({
     required this.title,
-    required this.author,
-    required this.description,
-    required this.image,
+    required this.authors,
     required this.id,
     required this.progress,
   });
 
   BookModel copyWith({
     String? title,
-    String? author,
-    String? description,
-    String? image,
+    List<String>? authors,
     String? id,
     String? progress,
   }) {
     return BookModel(
       title: title ?? this.title,
-      author: author ?? this.author,
-      description: description ?? this.description,
-      image: image ?? this.image,
+      authors: authors ?? this.authors,
       id: id ?? this.id,
       progress: progress ?? this.progress,
     );
@@ -37,9 +32,7 @@ class BookModel {
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'title': title,
-      'author': author,
-      'description': description,
-      'image': image,
+      'authors': authors,
       'id': id,
       'progress': progress,
     };
@@ -48,9 +41,9 @@ class BookModel {
   factory BookModel.fromMap(Map<String, dynamic> map) {
     return BookModel(
       title: map['title'] as String,
-      author: map['author'] as String,
-      description: map['description'] as String,
-      image: map['image'] as String,
+      authors: List<String>.from(
+        (map['authors']),
+      ),
       id: map['id'] as String,
       progress: map['progress'] as String,
     );
@@ -63,7 +56,7 @@ class BookModel {
 
   @override
   String toString() {
-    return 'BookModel(title: $title, author: $author, description: $description, image: $image, id: $id, progress: $progress)';
+    return 'BookModel(title: $title, authors: $authors, id: $id, progress: $progress)';
   }
 
   @override
@@ -71,20 +64,13 @@ class BookModel {
     if (identical(this, other)) return true;
 
     return other.title == title &&
-        other.author == author &&
-        other.description == description &&
-        other.image == image &&
+        listEquals(other.authors, authors) &&
         other.id == id &&
         other.progress == progress;
   }
 
   @override
   int get hashCode {
-    return title.hashCode ^
-        author.hashCode ^
-        description.hashCode ^
-        image.hashCode ^
-        id.hashCode ^
-        progress.hashCode;
+    return title.hashCode ^ authors.hashCode ^ id.hashCode ^ progress.hashCode;
   }
 }

@@ -1,5 +1,4 @@
 import 'package:epub_reader/features/auth/provider/auth_provider.dart';
-import 'package:epub_reader/features/auth/screens/login_screen.dart';
 import 'package:epub_reader/utils/constants.dart';
 import 'package:epub_reader/utils/route_names.dart';
 import 'package:epub_reader/utils/utils.dart';
