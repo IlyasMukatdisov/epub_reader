@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:epub_reader/features/auth/provider/auth_provider.dart';
 import 'package:epub_reader/features/book/models/book_model.dart';
@@ -45,7 +47,7 @@ class FirebaseBookRepository implements BookRepository {
   }
 
   @override
-  Future<void> addBooks({
+  Future<void> addBooksToDb({
     required List<BookModel> books,
     required String userId,
   }) async {
@@ -60,4 +62,7 @@ class FirebaseBookRepository implements BookRepository {
           );
     }
   }
+
+  @override
+  Future<void> addBooksToStorage({required List<File> books}) async {}
 }

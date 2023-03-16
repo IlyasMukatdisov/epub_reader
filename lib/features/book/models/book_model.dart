@@ -1,11 +1,9 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
-
 class BookModel {
   final String title;
-  final List<String> authors;
+  final String authors;
   final String id;
   final String? progress;
   BookModel({
@@ -17,7 +15,7 @@ class BookModel {
 
   BookModel copyWith({
     String? title,
-    List<String>? authors,
+    String? authors,
     String? id,
     String? progress,
   }) {
@@ -41,11 +39,9 @@ class BookModel {
   factory BookModel.fromMap(Map<String, dynamic> map) {
     return BookModel(
       title: map['title'] as String,
-      authors: List<String>.from(
-        (map['authors']),
-      ),
+      authors: map['authors'] as String,
       id: map['id'] as String,
-      progress: map['progress'] as String,
+      progress: map['progress'] != null ? map['progress'] as String : null,
     );
   }
 
@@ -63,14 +59,11 @@ class BookModel {
   bool operator ==(covariant BookModel other) {
     if (identical(this, other)) return true;
 
-    return other.title == title &&
-        listEquals(other.authors, authors) &&
-        other.id == id &&
-        other.progress == progress;
+    return other.title == title && other.authors == authors;
   }
 
   @override
   int get hashCode {
-    return title.hashCode ^ authors.hashCode ^ id.hashCode ^ progress.hashCode;
+    return title.hashCode ^ authors.hashCode;
   }
 }

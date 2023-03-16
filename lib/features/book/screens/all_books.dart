@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:epub_reader/features/auth/provider/auth_provider.dart';
 import 'package:epub_reader/features/book/models/book_model.dart';
@@ -19,44 +20,24 @@ class AllBooksScreen extends StatelessWidget {
         floatingActionButton: Consumer(
           builder: (context, ref, child) => FloatingActionButton(
             onPressed: () {
-              pickBooks().then(
-                (books) async {
-                  if (books != []) {
-                    getBooks(books).then(
-                      (bookModels) {
-                        final savedBooks = ref.watch(booksProvider).value;
-                        if (savedBooks != null) {
-                          savedBooks.map(
-                            (savedBook) {
-                              bookModels.map(
-                                (bookModel) {
-                                  if (savedBook.title == bookModel.title &&
-                                      const ListEquality().equals(
-                                        savedBook.authors,
-                                        bookModel.authors,
-                                      )) {
-                                    bookModels.remove(bookModel);
-                                    debugPrint('${savedBook.title} removed');
-                                  }
-                                },
-                              );
-                            },
-                          );
-                        }
-                        ref.read(bookRepositoryProvider).addBooks(
-                              books: bookModels,
-                              userId: ref.read(authProvider).currentUser!.uid,
-                            );
-                      },
-                    ).onError(
-                      (error, stackTrace) {
-                        Utils.showMessage(
-                          context: context,
-                          message: error.toString(),
-                        );
-                      },
-                    );
-                  }
+              pickBooks().then((bookFiles) {
+                bookSaveLogic(
+                  bookFiles: bookFiles,
+                  context: context,
+                  ref: ref,
+                );
+              }).onError(
+                (error, stackTrace) {
+                  debugPrint(
+                    error.toString(),
+                  );
+                  debugPrint(
+                    stackTrace.toString(),
+                  );
+                  Utils.showMessage(
+                    context: context,
+                    message: error.toString(),
+                  );
                 },
               );
             },
@@ -68,26 +49,77 @@ class AllBooksScreen extends StatelessWidget {
         ),
         body: const AllBooksList());
   }
+
+  void bookSaveLogic({
+    required List<File> bookFiles,
+    required BuildContext context,
+    required WidgetRef ref,
+  }) {
+    if (bookFiles != []) {
+      final savedBooks = ref.read(booksProvider).value;
+      final List<EpubBook> epubBooks = getEpubBooks(bookFiles);
+
+      final List<BookModel> bookModels = getBooks(epubBooks);
+
+      if (savedBooks != null) {
+        bookModels.removeWhere(
+          (bookModel) {
+            if (savedBooks.contains(bookModel)) {
+              debugPrint(
+                'Book ${bookModel.title} by ${bookModel.authors} already exists',
+              );
+              Utils.showMessage(
+                context: context,
+                message:
+                    'Book ${bookModel.title} by ${bookModel.authors} already exists',
+              );
+              return true;
+            } else {
+              return false;
+            }
+          },
+        );
+        for (final savedBook in savedBooks) {
+          for (final epubBook in epubBooks) {
+            if (epubBook.Title == savedBook.title &&
+                epubBook.Author == savedBook.authors) {
+              epubBooks.remove(epubBook);
+            }
+          }
+        }
+      }
+      if (bookModels.isNotEmpty && epubBooks.isNotEmpty) {
+        ref.read(bookRepositoryProvider).addBooksToDb(
+              books: bookModels,
+              userId: ref.read(authProvider).currentUser!.uid,
+            );
+      }
+    }
+  }
 }
 
-Future<List<BookModel>> getBooks(List<File> books) async {
-  final List<EpubBook> epubBooks = [];
-  for (var book in books) {
-    epubBooks.add(
-      await EpubReader.readBook(
-        await book.readAsBytes(),
-      ),
-    );
-  }
+List<EpubBook> getEpubBooks(List<File> files) {
+  final epubBooks = <EpubBook>[];
+  files.map(
+    (file) async {
+      final epubBook = await EpubReader.readBook(
+        file.readAsBytes(),
+      );
+      epubBooks.add(epubBook);
+    },
+  );
+
+  return epubBooks;
+}
+
+List<BookModel> getBooks(List<EpubBook> epubBooks) {
   const uuid = Uuid();
 
   final bookModels = epubBooks.map(
     (epubBook) {
-      List<String> authors = [];
-      epubBook.AuthorList?.map((author) => authors.add(author ?? 'Author'));
       return BookModel(
         title: epubBook.Title ?? 'Title',
-        authors: authors,
+        authors: epubBook.Author ?? 'Author',
         id: uuid.v4(),
         progress: '',
       );
