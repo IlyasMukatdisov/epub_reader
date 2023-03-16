@@ -12,6 +12,12 @@ abstract class BookRepository {
   });
 
   Future<void> addBooksToStorage({
+    required String userId,
     required List<File> books,
+    required List<BookModel> bookModels,
+  });
+
+  Future<List<File>> getBooksFromStorage({
+    required String userId,
   });
 }

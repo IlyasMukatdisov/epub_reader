@@ -1,6 +1,4 @@
 import 'dart:io';
-import 'dart:math';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:epub_reader/features/auth/provider/auth_provider.dart';
 import 'package:epub_reader/features/book/models/book_model.dart';
 import 'package:epub_reader/features/book/provider/book_provider.dart';
@@ -20,13 +18,15 @@ class AllBooksScreen extends StatelessWidget {
         floatingActionButton: Consumer(
           builder: (context, ref, child) => FloatingActionButton(
             onPressed: () {
-              pickBooks().then((bookFiles) {
-                bookSaveLogic(
-                  bookFiles: bookFiles,
-                  context: context,
-                  ref: ref,
-                );
-              }).onError(
+              pickBooks().then(
+                (bookFiles) {
+                  bookSaveLogic(
+                    bookFiles: bookFiles,
+                    context: context,
+                    ref: ref,
+                  );
+                },
+              ).onError(
                 (error, stackTrace) {
                   debugPrint(
                     error.toString(),
@@ -54,17 +54,22 @@ class AllBooksScreen extends StatelessWidget {
     required List<File> bookFiles,
     required BuildContext context,
     required WidgetRef ref,
-  }) {
+  }) async {
     if (bookFiles != []) {
       final savedBooks = ref.read(booksProvider).value;
-      final List<EpubBook> epubBooks = getEpubBooks(bookFiles);
+      final List<EpubBook> epubBooks = await getEpubBooks(bookFiles);
 
       final List<BookModel> bookModels = getBooks(epubBooks);
+
+      final List<int> indexes = [];
+
+      final String userId = ref.read(authProvider).currentUser!.uid;
 
       if (savedBooks != null) {
         bookModels.removeWhere(
           (bookModel) {
             if (savedBooks.contains(bookModel)) {
+              indexes.add(savedBooks.indexOf(bookModel));
               debugPrint(
                 'Book ${bookModel.title} by ${bookModel.authors} already exists',
               );
@@ -79,35 +84,30 @@ class AllBooksScreen extends StatelessWidget {
             }
           },
         );
-        for (final savedBook in savedBooks) {
-          for (final epubBook in epubBooks) {
-            if (epubBook.Title == savedBook.title &&
-                epubBook.Author == savedBook.authors) {
-              epubBooks.remove(epubBook);
-            }
-          }
-        }
+        indexes.map((i) => bookFiles.removeAt(i));
       }
       if (bookModels.isNotEmpty && epubBooks.isNotEmpty) {
         ref.read(bookRepositoryProvider).addBooksToDb(
               books: bookModels,
-              userId: ref.read(authProvider).currentUser!.uid,
+              userId: userId,
+            );
+        ref.read(bookRepositoryProvider).addBooksToStorage(
+              bookModels: bookModels,
+              books: bookFiles,
+              userId: userId,
             );
       }
     }
   }
 }
 
-List<EpubBook> getEpubBooks(List<File> files) {
+Future<List<EpubBook>> getEpubBooks(List<File> files) async {
   final epubBooks = <EpubBook>[];
-  files.map(
-    (file) async {
-      final epubBook = await EpubReader.readBook(
-        file.readAsBytes(),
-      );
-      epubBooks.add(epubBook);
-    },
-  );
+
+  for (var file in files) {
+    final epubBook = await EpubReader.readBook(file.readAsBytesSync());
+    epubBooks.add(epubBook);
+  }
 
   return epubBooks;
 }
