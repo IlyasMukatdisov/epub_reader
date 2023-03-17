@@ -7,6 +7,7 @@ import 'package:epub_reader/features/book/provider/book_repository.dart';
 import 'package:epub_reader/utils/strings.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 
 final bookRepositoryProvider = Provider<BookRepository>(
   (ref) => FirebaseBookRepository(
@@ -18,7 +19,7 @@ final bookRepositoryProvider = Provider<BookRepository>(
 final booksProvider = StreamProvider.autoDispose<List<BookModel>>((ref) {
   final userId = ref.watch(authProvider).currentUser?.uid;
   final repository = ref.watch(bookRepositoryProvider);
-  return repository.getBooks(userId: userId!);
+  return repository.getBooksInfo(userId: userId!);
 });
 
 class FirebaseBookRepository implements BookRepository {
@@ -31,7 +32,7 @@ class FirebaseBookRepository implements BookRepository {
   });
 
   @override
-  Stream<List<BookModel>> getBooks({
+  Stream<List<BookModel>> getBooksInfo({
     required String userId,
   }) {
     return firestore
@@ -51,7 +52,7 @@ class FirebaseBookRepository implements BookRepository {
   }
 
   @override
-  Future<void> addBooksToDb({
+  Future<void> addBooks({
     required List<BookModel> books,
     required String userId,
   }) async {
@@ -67,12 +68,14 @@ class FirebaseBookRepository implements BookRepository {
     }
   }
 
+// Returns a list of stored books paths
   @override
-  Future<void> addBooksToStorage({
+  Future<List<String>> addBooksToStorage({
     required List<File> books,
     required List<BookModel> bookModels,
     required String userId,
   }) async {
+    final List<String> paths = [];
     for (int i = 0; i < bookModels.length; i++) {
       final String path =
           '${Strings.usersCollection}/$userId/${Strings.booksCollection}/${bookModels.elementAt(i).id}';
@@ -80,19 +83,25 @@ class FirebaseBookRepository implements BookRepository {
       await booksRef.putFile(
         books.elementAt(i),
       );
+      paths.add(path);
     }
+    return paths;
   }
 
   @override
-  Future<List<File>> getBooksFromStorage({
+  Future<List<File>> downloadBooksFromStorage({
     required String userId,
   }) async {
-    final String path =
-        '${Strings.usersCollection}/$userId/${Strings.booksCollection}';
-    final ListResult listResults = await storage.ref().child(path).listAll();
-    for(Reference reference in listResults.items){
-      await reference.getData();
-    }
-    
+    // final List<File> files = [];
+    // final String bookCollectionPath =
+    //     '${Strings.usersCollection}/$userId/${Strings.booksCollection}';
+
+    // final appDocDir = await getApplicationDocumentsDirectory();
+    // for (Reference reference in listResults.items) {
+    //   final filePath = "${appDocDir.absolute}/${Strings.booksCollection}/";
+
+    //   files.add(File(await reference.getData()));
+    // }
+    return [];
   }
 }

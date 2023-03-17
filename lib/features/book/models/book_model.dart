@@ -6,11 +6,13 @@ class BookModel {
   final String authors;
   final String id;
   final String? progress;
+  String path;
   BookModel({
     required this.title,
     required this.authors,
     required this.id,
-    required this.progress,
+    this.progress,
+    required this.path,
   });
 
   BookModel copyWith({
@@ -18,12 +20,14 @@ class BookModel {
     String? authors,
     String? id,
     String? progress,
+    String? path,
   }) {
     return BookModel(
       title: title ?? this.title,
       authors: authors ?? this.authors,
       id: id ?? this.id,
       progress: progress ?? this.progress,
+      path: path ?? this.path,
     );
   }
 
@@ -33,6 +37,7 @@ class BookModel {
       'authors': authors,
       'id': id,
       'progress': progress,
+      'path': path,
     };
   }
 
@@ -42,6 +47,7 @@ class BookModel {
       authors: map['authors'] as String,
       id: map['id'] as String,
       progress: map['progress'] != null ? map['progress'] as String : null,
+      path: map['path'] as String,
     );
   }
 
@@ -52,18 +58,26 @@ class BookModel {
 
   @override
   String toString() {
-    return 'BookModel(title: $title, authors: $authors, id: $id, progress: $progress)';
+    return 'BookModel(title: $title, authors: $authors, id: $id, progress: $progress, path: $path)';
   }
 
   @override
   bool operator ==(covariant BookModel other) {
     if (identical(this, other)) return true;
 
-    return other.title == title && other.authors == authors;
+    return other.title == title &&
+        other.authors == authors &&
+        other.id == id &&
+        other.progress == progress &&
+        other.path == path;
   }
 
   @override
   int get hashCode {
-    return title.hashCode ^ authors.hashCode;
+    return title.hashCode ^
+        authors.hashCode ^
+        id.hashCode ^
+        progress.hashCode ^
+        path.hashCode;
   }
 }

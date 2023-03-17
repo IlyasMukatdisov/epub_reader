@@ -20,7 +20,7 @@ class AllBooksScreen extends StatelessWidget {
             onPressed: () {
               pickBooks().then(
                 (bookFiles) {
-                  bookSaveLogic(
+                  saveBookToSystem(
                     bookFiles: bookFiles,
                     context: context,
                     ref: ref,
@@ -50,7 +50,7 @@ class AllBooksScreen extends StatelessWidget {
         body: const AllBooksList());
   }
 
-  void bookSaveLogic({
+  void saveBookToSystem({
     required List<File> bookFiles,
     required BuildContext context,
     required WidgetRef ref,
@@ -59,7 +59,7 @@ class AllBooksScreen extends StatelessWidget {
       final savedBooks = ref.read(booksProvider).value;
       final List<EpubBook> epubBooks = await getEpubBooks(bookFiles);
 
-      final List<BookModel> bookModels = getBooks(epubBooks);
+      final List<BookModel> bookModels = createEpubBookModel(epubBooks);
 
       final List<int> indexes = [];
 
@@ -87,13 +87,17 @@ class AllBooksScreen extends StatelessWidget {
         indexes.map((i) => bookFiles.removeAt(i));
       }
       if (bookModels.isNotEmpty && epubBooks.isNotEmpty) {
-        ref.read(bookRepositoryProvider).addBooksToDb(
+        final uploadedPaths =
+            await ref.read(bookRepositoryProvider).addBooksToStorage(
+                  bookModels: bookModels,
+                  books: bookFiles,
+                  userId: userId,
+                );
+        for (int i = 0; i < uploadedPaths.length; i++) {
+          bookModels.elementAt(i).path = uploadedPaths[i];
+        }
+        ref.read(bookRepositoryProvider).addBooks(
               books: bookModels,
-              userId: userId,
-            );
-        ref.read(bookRepositoryProvider).addBooksToStorage(
-              bookModels: bookModels,
-              books: bookFiles,
               userId: userId,
             );
       }
@@ -112,7 +116,7 @@ Future<List<EpubBook>> getEpubBooks(List<File> files) async {
   return epubBooks;
 }
 
-List<BookModel> getBooks(List<EpubBook> epubBooks) {
+List<BookModel> createEpubBookModel(List<EpubBook> epubBooks) {
   const uuid = Uuid();
 
   final bookModels = epubBooks.map(
@@ -122,6 +126,7 @@ List<BookModel> getBooks(List<EpubBook> epubBooks) {
         authors: epubBook.Author ?? 'Author',
         id: uuid.v4(),
         progress: '',
+        path: '',
       );
     },
   ).toList();
