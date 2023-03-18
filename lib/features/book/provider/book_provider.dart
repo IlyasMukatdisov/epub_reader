@@ -6,6 +6,7 @@ import 'package:epub_reader/features/book/models/book_model.dart';
 import 'package:epub_reader/features/book/provider/book_repository.dart';
 import 'package:epub_reader/utils/strings.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -90,18 +91,52 @@ class FirebaseBookRepository implements BookRepository {
 
   @override
   Future<List<File>> downloadBooksFromStorage({
-    required String userId,
+    required List<BookModel> bookModels,
   }) async {
-    // final List<File> files = [];
-    // final String bookCollectionPath =
-    //     '${Strings.usersCollection}/$userId/${Strings.booksCollection}';
+    final appDocDir = await getApplicationDocumentsDirectory();
+    final List<File> files = downloadBooks(
+      bookModels: bookModels,
+      appDocDir: appDocDir,
+    );
+    return files;
+  }
 
-    // final appDocDir = await getApplicationDocumentsDirectory();
-    // for (Reference reference in listResults.items) {
-    //   final filePath = "${appDocDir.absolute}/${Strings.booksCollection}/";
+  List<File> downloadBooks({
+    required List<BookModel> bookModels,
+    required Directory appDocDir,
+  }) {
+    final List<File> files = [];
+    for (BookModel bookModel in bookModels) {
+      final storageRef = storage.ref();
+      final storagePathRef = storageRef.child(bookModel.path);
+      final filePath =
+          "${appDocDir.absolute}/${Strings.booksCollection}/${bookModel.id}";
+      final File file = File(filePath);
+      final downloadTask = storagePathRef.writeToFile(file);
+      downloadTask.snapshotEvents.listen(
+        (taskSnapshot) {
+          switch (taskSnapshot.state) {
+            case TaskState.running:
+              debugPrint('Downloading... ${taskSnapshot.bytesTransferred}');
+              break;
+            case TaskState.paused:
+              debugPrint('Paused ${taskSnapshot.bytesTransferred}');
+              break;
+            case TaskState.success:
+              debugPrint('Downloaded ${taskSnapshot.bytesTransferred}');
+              files.add(file);
+              break;
 
-    //   files.add(File(await reference.getData()));
-    // }
-    return [];
+            case TaskState.canceled:
+              debugPrint('Canceled');
+              break;
+            case TaskState.error:
+              debugPrint('Downloading Error');
+              break;
+          }
+        },
+      );
+    }
+    return files;
   }
 }

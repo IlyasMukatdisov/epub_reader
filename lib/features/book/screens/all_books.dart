@@ -158,12 +158,19 @@ class AllBooksList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final books = ref.watch(booksProvider);
+
     return books.when(
-      data: (data) => Center(
-        child: Text(
-          '${data.length} items',
-        ),
-      ),
+      data: (bookModels) {
+        ref
+            .watch(bookRepositoryProvider)
+            .downloadBooksFromStorage(bookModels: bookModels)
+            .then((value) {});
+        return Center(
+          child: Text(
+            '${bookModels.length} items',
+          ),
+        );
+      },
       error: (error, stackTrace) => Center(
         child: Text(
           '$error',

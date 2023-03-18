@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:epub_reader/features/book/models/book_model.dart';
 
+
 abstract class BookRepository {
   Stream<List<BookModel>> getBooksInfo({
     required String userId,
@@ -19,6 +20,6 @@ abstract class BookRepository {
   });
 
   Future<List<File>> downloadBooksFromStorage({
-    required String userId,
+    required List<BookModel> bookModels,
   });
 }
